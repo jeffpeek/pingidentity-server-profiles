@@ -1,0 +1,1244 @@
+# Configuration changes to bring source (config-postSetup.gz) to target (config.ldif)
+# Comparison options:
+#   Ignore differences in configuration that is part of the topology registry
+#   Ignore differences on shared host
+#   Ignore differences by instance
+
+# The following warnings were encountered when doing the comparison:
+# Exception: Could not compute the differences for object stored in configuration entry with DN ds-cfg-debug-scope=com.unboundid.directory.sdk.impl.ServerContextImpl,cn=Debug Targets,cn=Server SDK Extension Debug Logger,cn=Loggers,cn=config.  This most likely is due to an unhandled set of dependencies {ds-cfg-debug-scope=com.unboundid.directory.sdk.impl.ServerContextImpl,cn=Debug Targets,cn=Server SDK Extension Debug Logger,cn=Loggers,cn=config=[PARENT]}.  Report this to UnboundID support along with a collect-support-data archive. (ConfigObject.java:680 ConfigurationRoot.java:542 ConfigurationRoot.java:411 ConfigDiff.java:1395 ConfigDiff.java:1104 ConfigDiff.java:372 ConfigDiff.java:335 (8.3.0.0-20210617212340.000Z-29a2bc05))
+
+dsconfig set-trust-manager-provider-prop \
+    --provider-name 'Blind Trust'  \
+    --set enabled:true 
+
+dsconfig create-local-db-index \
+    --backend-name userRoot  \
+    --index-name ou  \
+    --set index-type:equality 
+
+dsconfig create-local-db-index \
+    --backend-name userRoot  \
+    --index-name pf-connected-identity  \
+    --set index-type:equality 
+
+dsconfig create-local-db-index \
+    --backend-name userRoot  \
+    --index-name roomNumber  \
+    --set index-type:equality 
+
+dsconfig create-external-server \
+    --server-name PingFederateInstance  \
+    --type http  \
+    --set base-url:https://pd-demo-1.pingtraining.net:9031  \
+    --set hostname-verification-method:allow-all  \
+    --set 'trust-manager-provider:Blind Trust' 
+
+dsconfig create-external-server \
+    --server-name 'PingOne Auth Service'  \
+    --type ping-one-http  \
+    --set 'description:This defines HTTPS trust settings and network timeouts used by the PingOne ID Token Validator when connecting to the PingOne auth service.'  \
+    --set trust-manager-provider:JVM-Default 
+
+dsconfig set-global-configuration-prop \
+    --set configuration-server-group:group-one  \
+    --set force-as-master-for-mirrored-data:true  \
+    --add allowed-task:com.unboundid.directory.server.tasks.RemoveAttributeTypeTask  \
+    --add allowed-task:com.unboundid.directory.server.tasks.RemoveObjectClassTask 
+
+dsconfig set-access-control-handler-prop \
+    --remove 'global-aci:(target="ldap:///")(targetscope="base")(targetattr="* || namingContexts || startupUUID || subschemaSubentry || supportedAuthPasswordSchemes || supportedControl || supportedExtension || supportedFeatures || supportedLDAPVersion || supportedSASLMechanisms || vendorName || vendorVersion || ds-supported-otp-delivery-mechanism")(version 3.0; acl "Anonymous access to selected root DSE information"; allow (read,search,compare) userdn="ldap:///anyone";)'  \
+    --remove 'global-aci:(targetattr="entryUUID || ds-entry-unique-id || createTimestamp || ds-create-time || modifyTimestamp || ds-update-time || ds-entry-checksum")(version 3.0;acl "Access to operational attributes used by the SCIM2 extension"; allow (read,search,compare) userdn="ldap:///cn=SCIM2 Servlet,cn=Root DNs,cn=config";)'  \
+    --remove 'global-aci:(targetcontrol="1.3.6.1.1.13.2 || 1.2.840.113556.1.4.473 || 1.2.840.113556.1.4.319 || 2.16.840.1.113730.3.4.9 || 1.3.6.1.1.12 || 1.2.840.113556.1.4.1413 || 1.3.6.1.4.1.30221.2.5.40 || 1.3.6.1.4.1.30221.2.5.44")(version 3.0;acl "Access to controls used by the SCIM2 extension"; allow (all) userdn="ldap:///cn=SCIM2 Servlet,cn=Root DNs,cn=config";)'  \
+    --add 'global-aci:(extop="1.3.6.1.4.1.30221.2.6.10")(version 3.0; acl "Proxy User Access to selected extended operations"; allow (read) userdn="ldap:///cn=Proxy User,cn=Root DNs,cn=config";)'  \
+    --add 'global-aci:(extop="1.3.6.1.4.1.30221.2.6.17 || 1.3.6.1.4.1.30221.2.6.62")(version 3.0;acl "Authenticated access to the multi-update and generate-password extended requests for the Delegated Admin API"; allow (read) userdn="ldap:///all";)'  \
+    --add 'global-aci:(target="ldap:///")(targetscope="base")(targetattr="* || namingContexts || startupUUID || subschemaSubentry || supportedAuthPasswordSchemes || supportedControl || supportedExtension || supportedFeatures || supportedLDAPVersion || supportedSASLMechanisms || vendorName || vendorVersion || ds-supported-otp-delivery-mechanism || ds-legacy-vendor-version")(version 3.0; acl "Anonymous access to selected root DSE information"; allow (read,search,compare) userdn="ldap:///anyone";)'  \
+    --add 'global-aci:(target="ldap:///cn=config")(targetattr="*")(version 3.0; acl "Allow DS OPERS access to config"; allow (all) groupdn="ldap:///cn=Directory Operators,ou=Groups,dc=example,dc=com";)'  \
+    --add 'global-aci:(target="ldap:///cn=tasks")(targetattr="*")(version 3.0; acl "Allow DS OPERS access to tasks"; allow (all) groupdn="ldap:///cn=Directory Operators,ou=Groups,dc=example,dc=com";)'  \
+    --add 'global-aci:(targetattr="*")(version 3.0; acl "Proxy User Access"; allow(proxy) userdn="ldap:///cn=Proxy User,cn=Root DNs,cn=config";)'  \
+    --add 'global-aci:(targetattr="entryUUID || ds-entry-unique-id || createTimestamp || ds-create-time || modifyTimestamp || ds-update-time || ds-entry-checksum")(version 3.0;acl "Access to operational attributes used by the SCIM2 extension"; allow (read,search,compare) userdn="ldap:///cn=SCIM2 Servlet,cn=Root DNs,cn=config" or oauthscope="scim2";)'  \
+    --add 'global-aci:(targetcontrol="1.2.840.113556.1.4.1413")(version 3.0; acl "Anonymous access to the permissive modify request control"; allow (read) userdn="ldap:///anyone";)'  \
+    --add 'global-aci:(targetcontrol="1.3.6.1.1.12")(version 3.0; acl "Anonymous access to the LDAP assertion request control as described in RFC 4528"; allow (read) userdn="ldap:///anyone";)'  \
+    --add 'global-aci:(targetcontrol="1.3.6.1.1.13.2 || 1.2.840.113556.1.4.473 || 1.2.840.113556.1.4.319 || 2.16.840.1.113730.3.4.9 || 1.3.6.1.1.12 || 1.2.840.113556.1.4.1413 || 1.3.6.1.4.1.30221.2.5.40 || 1.3.6.1.4.1.30221.2.5.44")(version 3.0;acl "Access to controls used by the SCIM2 extension"; allow (all) userdn="ldap:///cn=SCIM2 Servlet,cn=Root DNs,cn=config" or oauthscope="scim2";)'  \
+    --add 'global-aci:(targetcontrol="1.3.6.1.4.1.4203.1.10.2 || 1.3.6.1.4.1.30221.2.5.40")(version 3.0;acl "Authenticated access to the no-op and password validation details request controls for the Delegated Admin API"; allow (read) userdn="ldap:///all";)'  \
+    --add 'global-aci:(targetcontrol="2.16.840.1.113730.3.4.9 || 1.2.840.113556.1.4.473")(version 3.0;acl "Access to the VirtualListView and the Server-side Sort request controls used for SCIM2 paging"; allow (all) userdn="ldap:///cn=SCIM2 Servlet,cn=Root DNs,cn=config" or oauthscope="scim2";)'  \
+    --add allowed-bind-control:get-recent-login-history 
+
+dsconfig set-backend-prop \
+    --backend-name config  \
+    --add insignificant-config-archive-attribute:ds-pwp-recent-login-history-json 
+
+dsconfig set-backend-prop \
+    --backend-name userRoot  \
+    --set 'description:Description Change By dsoper1' 
+
+dsconfig create-constructed-attribute \
+    --attribute-name constructedCN  \
+    --set attribute-type:cn  \
+    --set 'value-pattern:{givenName} {sn}' 
+
+dsconfig create-constructed-attribute \
+    --attribute-name constructedEmail  \
+    --set attribute-type:mail  \
+    --set 'value-pattern: {givenname:/^(.)(.*)/$1/s:lowerCase}{sn:lowerCase}@example.com' 
+
+dsconfig create-constructed-attribute \
+    --attribute-name constructedGroupDescription  \
+    --set attribute-type:description  \
+    --set 'value-pattern:{cn} description' 
+
+dsconfig create-constructed-attribute \
+    --attribute-name pf-connected-identity  \
+    --set attribute-type:pf-connected-identity  \
+    --set value-pattern:auth-source=pf-local-identity:user-id={entryUUID} 
+
+dsconfig create-constructed-attribute \
+    --attribute-name ReqConstructedDesc  \
+    --set attribute-type:description  \
+    --set value-pattern:{l}-{serialNumber} 
+
+dsconfig create-delegated-admin-attribute-category \
+    --display-name Address  \
+    --set display-order-index:4 
+
+dsconfig create-delegated-admin-attribute-category \
+    --display-name 'Constructed Attributes'  \
+    --set display-order-index:2 
+
+dsconfig create-delegated-admin-attribute-category \
+    --display-name 'Phone Numbers'  \
+    --set display-order-index:3 
+
+dsconfig create-delegated-admin-attribute-category \
+    --display-name 'Required attributes'  \
+    --set display-order-index:0 
+
+dsconfig create-delegated-admin-attribute-category \
+    --display-name 'User Information'  \
+    --set display-order-index:2 
+
+dsconfig create-delegated-admin-rights \
+    --rights-name DArights  \
+    --set enabled:true  \
+    --set admin-user-dn:uid=DA,ou=People,dc=example,dc=com 
+
+dsconfig create-delegated-admin-rights \
+    --rights-name 'Delegated Admin Devices'  \
+    --set enabled:true  \
+    --set admin-user-dn:uid=user.2,ou=People,dc=example,dc=com 
+
+dsconfig create-delegated-admin-rights \
+    --rights-name 'Delegated Admin Groups'  \
+    --set enabled:true  \
+    --set admin-user-dn:uid=user.1,ou=People,dc=example,dc=com 
+
+dsconfig create-delegated-admin-rights \
+    --rights-name 'Delegated Admin Users'  \
+    --set enabled:true  \
+    --set admin-user-dn:uid=user.0,ou=People,dc=example,dc=com 
+
+dsconfig create-delegated-admin-rights \
+    --rights-name TenantRights  \
+    --set enabled:true  \
+    --set admin-group-dn:cn=AdminGroup,ou=($1),ou=Tenants,dc=example,dc=com 
+
+dsconfig create-json-attribute-constraints \
+    --attribute-type exampleJsonAttr  \
+    --set enabled:true  \
+    --set allow-unnamed-fields:false 
+
+dsconfig create-json-field-constraints \
+    --attribute-type exampleJsonAttr  \
+    --json-field name  \
+    --set value-type:string  \
+    --set is-required:true 
+
+dsconfig create-json-field-constraints \
+    --attribute-type exampleJsonAttr  \
+    --json-field pin  \
+    --set value-type:integer  \
+    --set minimum-numeric-value:1000  \
+    --set maximum-numeric-value:999999 
+
+dsconfig create-json-field-constraints \
+    --attribute-type exampleJsonAttr  \
+    --json-field type  \
+    --set value-type:string  \
+    --set is-required:true  \
+    --set allowed-value:home  \
+    --set allowed-value:remote  \
+    --set allowed-value:work 
+
+dsconfig create-rest-resource-type \
+    --type-name device  \
+    --set enabled:true  \
+    --set resource-endpoint:device  \
+    --set structural-ldap-objectclass:device  \
+    --set search-base-dn:ou=Devices,dc=example,dc=com  \
+    --set parent-dn:ou=Devices,dc=example,dc=com  \
+    --set create-rdn-attribute-type:cn  \
+    --set post-create-constructed-attribute:ReqConstructedDesc  \
+    --set update-constructed-attribute:ReqConstructedDesc  \
+    --set display-name:Device  \
+    --set search-filter-pattern:(cn=*%%*)  \
+    --set primary-display-attribute-type:cn 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name 'Delegated Admin Devices'  \
+    --rest-resource-type device  \
+    --set enabled:true  \
+    --set admin-permission:create  \
+    --set admin-permission:delete  \
+    --set admin-permission:manage-group-membership  \
+    --set admin-permission:read  \
+    --set admin-permission:update  \
+    --set admin-scope:all-resources-in-base 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name device  \
+    --attribute-type cn  \
+    --set 'display-name:Device Name'  \
+    --set display-order-index:1 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name device  \
+    --attribute-type description  \
+    --set display-name:Description  \
+    --set mutability:read-only  \
+    --set display-order-index:4 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name device  \
+    --attribute-type l  \
+    --set display-name:Location  \
+    --set display-order-index:3 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name device  \
+    --attribute-type serialNumber  \
+    --set 'display-name:Serial Number'  \
+    --set display-order-index:2 
+
+dsconfig create-rest-resource-type \
+    --type-name groups  \
+    --type group  \
+    --set enabled:true  \
+    --set resource-endpoint:groups  \
+    --set structural-ldap-objectclass:groupOfUniqueNames  \
+    --set auxiliary-ldap-objectclass:testClass  \
+    --set search-base-dn:dc=example,dc=com  \
+    --set parent-dn:dc=example,dc=com  \
+    --set create-rdn-attribute-type:cn  \
+    --set post-create-constructed-attribute:constructedGroupDescription  \
+    --set update-constructed-attribute:constructedGroupDescription  \
+    --set display-name:Groups  \
+    --set search-filter-pattern:(cn=*%%*)  \
+    --set primary-display-attribute-type:cn 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name DArights  \
+    --rest-resource-type groups  \
+    --set enabled:true  \
+    --set admin-permission:create  \
+    --set admin-permission:delete  \
+    --set admin-permission:manage-group-membership  \
+    --set admin-permission:read  \
+    --set admin-permission:update  \
+    --set admin-scope:all-resources-in-base 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name 'Delegated Admin Groups'  \
+    --rest-resource-type groups  \
+    --set enabled:true  \
+    --set admin-permission:create  \
+    --set admin-permission:delete  \
+    --set admin-permission:manage-group-membership  \
+    --set admin-permission:read  \
+    --set admin-permission:update  \
+    --set admin-scope:all-resources-in-base 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name groups  \
+    --attribute-type cn  \
+    --set display-name:Group  \
+    --set attribute-presentation:custom 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name groups  \
+    --attribute-type description  \
+    --set 'description:tests constructed and read only'  \
+    --set 'display-name:Constructed read-only description'  \
+    --set mutability:read-only  \
+    --set display-order-index:1 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name groups  \
+    --attribute-type testBrowser  \
+    --set 'display-name:Test Browser'  \
+    --set attribute-presentation:custom 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name groups  \
+    --attribute-type testInt  \
+    --set 'display-name:Group Number'  \
+    --set display-order-index:5 
+
+dsconfig create-rest-resource-type \
+    --type-name Managers  \
+    --type user  \
+    --set 'description:Rest type for users who are managers\n\It is used as reference type for the field Manager.'  \
+    --set enabled:true  \
+    --set resource-endpoint:managers  \
+    --set structural-ldap-objectclass:inetOrgPerson  \
+    --set auxiliary-ldap-objectclass:testClass  \
+    --set search-base-dn:dc=example,dc=com  \
+    --set include-filter:(employeeType=manager)  \
+    --set parent-dn:ou=people,dc=example,dc=com  \
+    --set create-rdn-attribute-type:uid  \
+    --set post-create-constructed-attribute:constructedCN  \
+    --set post-create-constructed-attribute:constructedEmail  \
+    --set update-constructed-attribute:constructedCN  \
+    --set update-constructed-attribute:constructedEmail  \
+    --set display-name:Managers  \
+    --set search-filter-pattern:(|(cn=*%%*)(mail=%%*)(uid=%%*)(sn=*%%*))  \
+    --set primary-display-attribute-type:cn 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name DArights  \
+    --rest-resource-type Managers  \
+    --set enabled:true  \
+    --set admin-permission:reference  \
+    --set admin-scope:all-resources-in-base 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name Managers  \
+    --attribute-type cn  \
+    --set 'display-name:Full Name' 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name Managers  \
+    --attribute-type employeeType  \
+    --set 'display-name:Employee Type (must be manager)' 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name Managers  \
+    --attribute-type givenName  \
+    --set 'display-name:First Name' 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name Managers  \
+    --attribute-type mail  \
+    --set display-name:Email 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name Managers  \
+    --attribute-type sn  \
+    --set 'display-name:Last name' 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name Managers  \
+    --attribute-type uid  \
+    --set 'display-name:Manager ID' 
+
+dsconfig create-rest-resource-type \
+    --type-name OrganizationalUnit  \
+    --set enabled:true  \
+    --set resource-endpoint:ou  \
+    --set structural-ldap-objectclass:organizationalUnit  \
+    --set auxiliary-ldap-objectclass:testClass  \
+    --set search-base-dn:ou=People,dc=example,dc=com  \
+    --set include-filter:(ou=People)  \
+    --set parent-dn:dc=example,dc=com  \
+    --set create-rdn-attribute-type:ou  \
+    --set display-name:OU  \
+    --set search-filter-pattern:(ou=%%*)  \
+    --set primary-display-attribute-type:ou 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name DArights  \
+    --rest-resource-type OrganizationalUnit  \
+    --set enabled:true  \
+    --set admin-permission:create  \
+    --set admin-permission:delete  \
+    --set admin-permission:manage-group-membership  \
+    --set admin-permission:read  \
+    --set admin-permission:update  \
+    --set admin-scope:all-resources-in-base 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name OrganizationalUnit  \
+    --attribute-type checkA  \
+    --set 'description:test custom checkboxes'  \
+    --set display-name:A  \
+    --set display-order-index:3 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name OrganizationalUnit  \
+    --attribute-type checkB  \
+    --set 'description:custom attribute depends on A'  \
+    --set display-name:B  \
+    --set display-order-index:4  \
+    --set attribute-presentation:custom 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name OrganizationalUnit  \
+    --attribute-type description  \
+    --set 'display-name:ou description'  \
+    --set display-order-index:1 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name OrganizationalUnit  \
+    --attribute-type ou  \
+    --set display-name:orgUnit 
+
+dsconfig create-rest-resource-type \
+    --type-name TenantOUs  \
+    --set enabled:true  \
+    --set resource-endpoint:tenantOus  \
+    --set structural-ldap-objectclass:organizationalUnit  \
+    --set auxiliary-ldap-objectclass:testClass  \
+    --set search-base-dn:ou=Tenants,dc=example,dc=com  \
+    --set include-filter:(!(ou=Tenants))  \
+    --set parent-dn:ou=Tenants,dc=example,dc=com  \
+    --set create-rdn-attribute-type:ou  \
+    --set display-name:Tenants  \
+    --set search-filter-pattern:(ou=%%*)  \
+    --set primary-display-attribute-type:ou 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name DArights  \
+    --rest-resource-type TenantOUs  \
+    --set enabled:true  \
+    --set admin-permission:create  \
+    --set admin-permission:delete  \
+    --set admin-permission:manage-group-membership  \
+    --set admin-permission:read  \
+    --set admin-permission:reference  \
+    --set admin-permission:update  \
+    --set admin-scope:all-resources-in-base 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name TenantRights  \
+    --rest-resource-type TenantOUs  \
+    --set enabled:true  \
+    --set admin-permission:reference  \
+    --set resource-subtree:ou=($1),ou=Tenants,dc=example,dc=com 
+
+dsconfig create-rest-resource-type \
+    --type-name 'Tenant Devices'  \
+    --set 'description:Devices that can be used by tenant employees'  \
+    --set enabled:true  \
+    --set resource-endpoint:tenantDevices  \
+    --set structural-ldap-objectclass:device  \
+    --set search-base-dn:ou=Tenants,dc=example,dc=com  \
+    --set parent-resource-type:TenantOUs  \
+    --set create-rdn-attribute-type:cn  \
+    --set display-name:Devices  \
+    --set search-filter-pattern:(cn=%%*)  \
+    --set primary-display-attribute-type:cn 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name TenantRights  \
+    --rest-resource-type 'Tenant Devices'  \
+    --set enabled:true  \
+    --set admin-permission:create  \
+    --set admin-permission:delete  \
+    --set admin-permission:manage-group-membership  \
+    --set admin-permission:read  \
+    --set admin-permission:reference  \
+    --set admin-permission:update  \
+    --set resource-subtree:ou=($1),ou=Tenants,dc=example,dc=com 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name 'Tenant Devices'  \
+    --attribute-type cn  \
+    --set 'display-name:Device Name' 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name 'Tenant Devices'  \
+    --attribute-type description  \
+    --set 'display-name:Device Location'  \
+    --set display-order-index:1 
+
+dsconfig create-rest-resource-type \
+    --type-name 'Tenant Users'  \
+    --type user  \
+    --set enabled:true  \
+    --set resource-endpoint:tenantUsers  \
+    --set structural-ldap-objectclass:inetOrgPerson  \
+    --set auxiliary-ldap-objectclass:testClass  \
+    --set search-base-dn:ou=Tenants,dc=example,dc=com  \
+    --set parent-resource-type:TenantOUs  \
+    --set create-rdn-attribute-type:uid  \
+    --set post-create-constructed-attribute:constructedCN  \
+    --set post-create-constructed-attribute:constructedEmail  \
+    --set update-constructed-attribute:constructedCN  \
+    --set update-constructed-attribute:constructedEmail  \
+    --set 'display-name:Tenant Users'  \
+    --set search-filter-pattern:(|(cn=*%%*)(mail=%%*)(uid=%%*)(sn=*%%*))  \
+    --set primary-display-attribute-type:uid 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name DArights  \
+    --rest-resource-type 'Tenant Users'  \
+    --set enabled:true  \
+    --set admin-permission:create  \
+    --set admin-permission:delete  \
+    --set admin-permission:manage-group-membership  \
+    --set admin-permission:read  \
+    --set admin-permission:reference  \
+    --set admin-permission:update  \
+    --set admin-scope:all-resources-in-base 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name TenantRights  \
+    --rest-resource-type 'Tenant Users'  \
+    --set enabled:true  \
+    --set admin-permission:create  \
+    --set admin-permission:delete  \
+    --set admin-permission:manage-group-membership  \
+    --set admin-permission:read  \
+    --set admin-permission:reference  \
+    --set admin-permission:update  \
+    --set resource-subtree:ou=($1),ou=Tenants,dc=example,dc=com 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name 'Tenant Users'  \
+    --attribute-type cn  \
+    --set 'display-name:Full Name'  \
+    --set mutability:read-only  \
+    --set multi-valued:true  \
+    --set 'attribute-category:Constructed Attributes'  \
+    --set display-order-index:5 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name 'Tenant Users'  \
+    --attribute-type givenName  \
+    --set 'display-name:First Name'  \
+    --set multi-valued:true  \
+    --set 'attribute-category:Required attributes' 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name 'Tenant Users'  \
+    --attribute-type mail  \
+    --set display-name:email  \
+    --set mutability:read-only  \
+    --set 'attribute-category:Constructed Attributes'  \
+    --set display-order-index:4 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name 'Tenant Users'  \
+    --attribute-type sn  \
+    --set 'display-name:Last Name'  \
+    --set 'attribute-category:Required attributes'  \
+    --set display-order-index:1 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name 'Tenant Users'  \
+    --attribute-type uid  \
+    --set 'display-name:Tenant user ID' 
+
+dsconfig create-rest-resource-type \
+    --type-name TenantAdminGroups  \
+    --type group  \
+    --set enabled:true  \
+    --set resource-endpoint:tenantAdminGroupsEndpoint  \
+    --set structural-ldap-objectclass:groupOfNames  \
+    --set search-base-dn:ou=Tenants,dc=example,dc=com  \
+    --set parent-resource-type:TenantOUs  \
+    --set create-rdn-attribute-type:cn  \
+    --set 'display-name:Tenant Admin Groups'  \
+    --set search-filter-pattern:(|(cn=*%%*)(description=%%*))  \
+    --set primary-display-attribute-type:description 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name DArights  \
+    --rest-resource-type TenantAdminGroups  \
+    --set enabled:true  \
+    --set admin-permission:create  \
+    --set admin-permission:delete  \
+    --set admin-permission:manage-group-membership  \
+    --set admin-permission:read  \
+    --set admin-permission:update  \
+    --set admin-scope:all-resources-in-base 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name TenantRights  \
+    --rest-resource-type TenantAdminGroups  \
+    --set enabled:true  \
+    --set admin-permission:manage-group-membership  \
+    --set admin-permission:read  \
+    --set resource-subtree:ou=($1),ou=Tenants,dc=example,dc=com 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name TenantAdminGroups  \
+    --attribute-type cn  \
+    --set 'display-name:Group Name (Must be AdminGroup)' 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name TenantAdminGroups  \
+    --attribute-type description  \
+    --set 'display-name:Group Description'  \
+    --set display-order-index:1 
+
+dsconfig create-rest-resource-type \
+    --type-name TenantGroups  \
+    --type group  \
+    --set enabled:true  \
+    --set resource-endpoint:tenantGroups  \
+    --set structural-ldap-objectclass:groupOfUniqueNames  \
+    --set search-base-dn:ou=Tenants,dc=example,dc=com  \
+    --set parent-resource-type:TenantOUs  \
+    --set create-rdn-attribute-type:cn  \
+    --set post-create-constructed-attribute:constructedGroupDescription  \
+    --set update-constructed-attribute:constructedGroupDescription  \
+    --set 'display-name:Tenant Groups'  \
+    --set search-filter-pattern:(cn=*%%*)  \
+    --set primary-display-attribute-type:cn 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name DArights  \
+    --rest-resource-type TenantGroups  \
+    --set enabled:true  \
+    --set admin-permission:create  \
+    --set admin-permission:delete  \
+    --set admin-permission:manage-group-membership  \
+    --set admin-permission:read  \
+    --set admin-permission:update  \
+    --set admin-scope:all-resources-in-base 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name TenantRights  \
+    --rest-resource-type TenantGroups  \
+    --set enabled:true  \
+    --set admin-permission:create  \
+    --set admin-permission:delete  \
+    --set admin-permission:manage-group-membership  \
+    --set admin-permission:read  \
+    --set admin-permission:reference  \
+    --set admin-permission:update  \
+    --set resource-subtree:ou=($1),ou=Tenants,dc=example,dc=com 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name TenantGroups  \
+    --attribute-type cn  \
+    --set display-name:Group  \
+    --set attribute-presentation:default 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name TenantGroups  \
+    --attribute-type description  \
+    --set 'description:tests constructed and read only'  \
+    --set 'display-name:Constructed read-only description'  \
+    --set mutability:read-only  \
+    --set display-order-index:1 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name TenantOUs  \
+    --attribute-type ou  \
+    --set 'display-name:Tenant Name' 
+
+dsconfig create-rest-resource-type \
+    --type-name users  \
+    --type user  \
+    --set enabled:true  \
+    --set resource-endpoint:users  \
+    --set structural-ldap-objectclass:inetOrgPerson  \
+    --set auxiliary-ldap-objectclass:pf-connected-identities  \
+    --set auxiliary-ldap-objectclass:testClass  \
+    --set search-base-dn:dc=example,dc=com  \
+    --set parent-dn:ou=people,dc=example,dc=com  \
+    --set create-rdn-attribute-type:uid  \
+    --set post-create-constructed-attribute:constructedCN  \
+    --set post-create-constructed-attribute:constructedEmail  \
+    --set post-create-constructed-attribute:pf-connected-identity  \
+    --set update-constructed-attribute:constructedCN  \
+    --set update-constructed-attribute:constructedEmail  \
+    --set display-name:Users  \
+    --set search-filter-pattern:(|(cn=*%%*)(mail=%%*)(uid=%%*)(sn=*%%*))  \
+    --set primary-display-attribute-type:uid  \
+    --set 'password-attribute-category:User Information' 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name DArights  \
+    --rest-resource-type users  \
+    --set enabled:true  \
+    --set admin-permission:create  \
+    --set admin-permission:delete  \
+    --set admin-permission:manage-group-membership  \
+    --set admin-permission:read  \
+    --set admin-permission:update  \
+    --set admin-scope:all-resources-in-base 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name 'Delegated Admin Devices'  \
+    --rest-resource-type users  \
+    --set enabled:true  \
+    --set admin-permission:read  \
+    --set admin-scope:all-resources-in-base 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name 'Delegated Admin Groups'  \
+    --rest-resource-type users  \
+    --set enabled:true  \
+    --set admin-permission:read  \
+    --set admin-scope:all-resources-in-base 
+
+dsconfig create-delegated-admin-resource-rights \
+    --rights-name 'Delegated Admin Users'  \
+    --rest-resource-type users  \
+    --set enabled:true  \
+    --set admin-permission:create  \
+    --set admin-permission:delete  \
+    --set admin-permission:manage-group-membership  \
+    --set admin-permission:read  \
+    --set admin-permission:update  \
+    --set admin-scope:all-resources-in-base 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name users  \
+    --attribute-type cn  \
+    --set 'display-name:Constructed Required Full Name' 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name users  \
+    --attribute-type createTimeStamp  \
+    --set 'display-name:Creation Date'  \
+    --set mutability:read-only  \
+    --set display-order-index:5 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name users  \
+    --attribute-type dateOfBirth  \
+    --set 'description:test date type attributes'  \
+    --set display-name:DOB  \
+    --set display-order-index:4 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name users  \
+    --attribute-type ds-pwp-account-disabled  \
+    --set 'display-name:Account Disabled' 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name users  \
+    --attribute-type ds-pwp-modifiable-state-json  \
+    --set 'display-name:Modifiable Password Policy State'  \
+    --set display-order-index:9999 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name users  \
+    --attribute-type employeeType  \
+    --set 'display-name:Employee type (manager, other)'  \
+    --set display-order-index:4 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name users  \
+    --attribute-type givenName  \
+    --set 'display-name:First Name'  \
+    --set 'attribute-category:User Information'  \
+    --set display-order-index:1 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name users  \
+    --attribute-type mail  \
+    --set 'display-name:Constructed email'  \
+    --set display-order-index:3 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name users  \
+    --attribute-type manager  \
+    --set 'display-name:Select Manager'  \
+    --set display-order-index:4  \
+    --set reference-resource-type:Managers 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name users  \
+    --attribute-type mobile  \
+    --set 'display-name:Mobile Phone'  \
+    --set 'attribute-category:Phone Numbers'  \
+    --set display-order-index:1 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name users  \
+    --attribute-type pager  \
+    --set display-name:Pager  \
+    --set 'attribute-category:Phone Numbers'  \
+    --set display-order-index:3 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name users  \
+    --attribute-type sn  \
+    --set 'display-name:Last Name'  \
+    --set 'attribute-category:User Information'  \
+    --set display-order-index:2 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name users  \
+    --attribute-type telephoneNumber  \
+    --set 'display-name:Home Telephone Number'  \
+    --set 'attribute-category:Phone Numbers'  \
+    --set display-order-index:2 
+
+dsconfig create-delegated-admin-attribute \
+    --type-name users  \
+    --attribute-type uid  \
+    --set 'display-name:User ID'  \
+    --set 'attribute-category:User Information' 
+
+dsconfig create-connection-criteria \
+    --criteria-name 'Root Users and Topology Administrators'  \
+    --type simple  \
+    --set user-auth-type:internal  \
+    --set user-auth-type:sasl  \
+    --set user-auth-type:simple  \
+    --set 'included-user-base-dn:cn=Root DNs,cn=config'  \
+    --set 'included-user-base-dn:cn=Topology Admin Users,cn=topology,cn=config' 
+
+dsconfig create-request-criteria \
+    --criteria-name 'Delegated Admin User Creation Request Criteria'  \
+    --type simple  \
+    --set operation-type:add  \
+    --set included-target-entry-dn:ou=people,dc=example,dc=com  \
+    --set any-included-target-entry-filter:(objectClass=inetOrgPerson)  \
+    --set 'included-application-name:PingDirectory Delegated Admin' 
+
+dsconfig create-result-criteria \
+    --criteria-name 'Failed Auth Result Criteria'  \
+    --type simple  \
+    --set result-code-criteria:selected-result-codes  \
+    --set result-code-value:auth-method-not-supported  \
+    --set result-code-value:authorization-denied  \
+    --set result-code-value:confidentiality-required  \
+    --set result-code-value:inappropriate-authentication  \
+    --set result-code-value:insufficient-access-rights  \
+    --set result-code-value:invalid-credentials  \
+    --set result-code-value:strong-auth-required 
+
+dsconfig set-crypto-manager-prop \
+    --reset ssl-encryption 
+
+dsconfig set-http-servlet-extension-prop \
+    --extension-name 'Delegated Admin'  \
+    --set access-token-scope:urn:pingidentity:directory-delegated-admin 
+
+dsconfig set-http-servlet-extension-prop \
+    --extension-name 'Swagger UI'  \
+    --set default-mime-type:text/html 
+
+dsconfig set-log-retention-policy-prop \
+    --policy-name 'File Count Growth Limit Policy'  \
+    --set number-of-files:10 
+
+dsconfig create-log-publisher \
+    --publisher-name 'Console JSON Audit Logger'  \
+    --type console-json-audit  \
+    --set enabled:false 
+
+dsconfig set-log-publisher-prop \
+    --publisher-name 'Debug Trace Logger'  \
+    --set enabled:true  \
+    --add debug-message-type:id-token-validator-processing  \
+    --add debug-message-type:id-token-validator-request-and-response  \
+    --add debug-message-type:server-sdk-extension  \
+    --set id-token-validator-message-type:error  \
+    --set id-token-validator-message-type:external-server-request  \
+    --set id-token-validator-message-type:external-server-response  \
+    --set id-token-validator-message-type:validation  \
+    --set id-token-validator-message-type:warning  \
+    --set extension-message-type:error  \
+    --set extension-message-type:info  \
+    --set extension-message-type:notice  \
+    --set extension-message-type:warning 
+
+dsconfig create-log-publisher \
+    --publisher-name 'Failed Authentications Logger'  \
+    --type file-based-access  \
+    --set enabled:true  \
+    --set 'result-criteria:Failed Auth Result Criteria'  \
+    --set include-instance-name:true  \
+    --set include-requester-dn:true  \
+    --set include-requester-ip-address:true  \
+    --set log-file:logs/failed-auths.log  \
+    --set 'rotation-policy:24 Hours Time Limit Rotation Policy'  \
+    --set 'rotation-policy:Size Limit Rotation Policy'  \
+    --set 'retention-policy:File Count Retention Policy'  \
+    --set 'retention-policy:Free Disk Space Retention Policy' 
+
+dsconfig set-log-publisher-prop \
+    --publisher-name 'File-Based Audit Logger'  \
+    --set enabled:true 
+
+dsconfig create-log-publisher \
+    --publisher-name 'Training Access Log Publisher'  \
+    --type file-based-access  \
+    --set enabled:true  \
+    --set log-connects:true  \
+    --set log-disconnects:true  \
+    --set log-security-negotiation:true  \
+    --set include-instance-name:true  \
+    --set include-requester-dn:true  \
+    --set include-requester-ip-address:true  \
+    --set include-request-controls:true  \
+    --set log-file:logs/training-access  \
+    --set 'rotation-policy:24 Hours Time Limit Rotation Policy'  \
+    --set 'rotation-policy:Size Limit Rotation Policy'  \
+    --set 'retention-policy:File Count Retention Policy'  \
+    --set encrypt-log:true 
+
+dsconfig set-password-policy-prop \
+    --policy-name 'Default Password Policy'  \
+    --set 'password-expiration-warning-interval:30 s'  \
+    --set lockout-failure-count:5 
+
+dsconfig set-password-policy-prop \
+    --policy-name 'Root Password Policy'  \
+    --set lockout-failure-count:5 
+
+dsconfig create-password-storage-scheme \
+    --scheme-name AES256  \
+    --type aes-256  \
+    --set enabled:false 
+
+dsconfig create-password-validator \
+    --validator-name 'Minimum Password Length of 14 Characters'  \
+    --type length-based  \
+    --set enabled:true  \
+    --set min-password-length:14 
+
+dsconfig create-password-validator \
+    --validator-name 'Training Length-Based PW Validator'  \
+    --type length-based  \
+    --set 'description:Training Length-Based PW Validator'  \
+    --set enabled:true  \
+    --set min-password-length:8 
+
+dsconfig create-password-validator \
+    --validator-name 'Training PW Character Set Validator'  \
+    --type character-set  \
+    --set 'description:Training PW Character Set Validator'  \
+    --set enabled:true  \
+    --set character-set:1:0123456789  \
+    --set character-set:1:ZYXWVUTSRQPONMLKJIHGFEDCBA  \
+    --set character-set:1:~!@#$%^&*()-_=+[]{}|;:,.<>/?  \
+    --set allow-unclassified-characters:true 
+
+dsconfig create-password-policy \
+    --policy-name 'Training Password Policy'  \
+    --set 'description:Training Password Policy'  \
+    --set require-secure-authentication:true  \
+    --set require-secure-password-changes:true  \
+    --set password-attribute:userpassword  \
+    --set 'default-password-storage-scheme:Salted SHA-512'  \
+    --set password-validator:Dictionary  \
+    --set 'password-validator:Repeated Characters'  \
+    --set 'password-validator:Training Length-Based PW Validator'  \
+    --set 'password-validator:Training PW Character Set Validator'  \
+    --set 'password-generator:Random Password Generator'  \
+    --set allow-expired-password-changes:true  \
+    --set lockout-failure-count:4  \
+    --set ignore-duplicate-password-failures:false  \
+    --set password-retirement-behavior:retire-on-administrative-reset  \
+    --set password-retirement-behavior:retire-on-request-with-control  \
+    --set 'max-retired-password-age:30 m' 
+
+dsconfig create-recurring-task \
+    --task-name 'Daily Backup'  \
+    --type backup  \
+    --set email-on-start:admin@example.com  \
+    --set email-on-success:admin@example.com  \
+    --set email-on-failure:admin@example.com  \
+    --set included-backend-id:userRoot  \
+    --set retain-previous-full-backup-count:2  \
+    --set max-megabytes-per-second:100 
+
+dsconfig create-recurring-task-chain \
+    --chain-name 'Daily Backups'  \
+    --set 'recurring-task:Daily Backup'  \
+    --set scheduled-date-selection-type:every-day  \
+    --set scheduled-time-of-day:00:05 
+
+dsconfig create-recurring-task \
+    --task-name ds1-profile  \
+    --type generate-server-profile  \
+    --set profile-directory:profile  \
+    --set retain-previous-profile-count:1 
+
+dsconfig create-recurring-task-chain \
+    --chain-name Profiles  \
+    --set enabled:false  \
+    --set recurring-task:ds1-profile  \
+    --set scheduled-date-selection-type:selected-days-of-the-week  \
+    --set scheduled-day-of-the-week:every-friday  \
+    --set scheduled-day-of-the-week:every-monday  \
+    --set scheduled-day-of-the-week:every-saturday  \
+    --set scheduled-day-of-the-week:every-sunday  \
+    --set scheduled-day-of-the-week:every-thursday  \
+    --set scheduled-day-of-the-week:every-tuesday  \
+    --set scheduled-day-of-the-week:every-wednesday  \
+    --set scheduled-day-of-the-week:fifth-friday-of-the-month  \
+    --set scheduled-day-of-the-week:fifth-monday-of-the-month  \
+    --set scheduled-day-of-the-week:fifth-saturday-of-the-month  \
+    --set scheduled-day-of-the-week:fifth-sunday-of-the-month  \
+    --set scheduled-day-of-the-week:fifth-thursday-of-the-month  \
+    --set scheduled-day-of-the-week:fifth-tuesday-of-the-month  \
+    --set scheduled-day-of-the-week:fifth-wednesday-of-the-month  \
+    --set scheduled-day-of-the-week:first-friday-of-the-month  \
+    --set scheduled-day-of-the-week:first-monday-of-the-month  \
+    --set scheduled-day-of-the-week:first-saturday-of-the-month  \
+    --set scheduled-day-of-the-week:first-sunday-of-the-month  \
+    --set scheduled-day-of-the-week:first-thursday-of-the-month  \
+    --set scheduled-day-of-the-week:first-tuesday-of-the-month  \
+    --set scheduled-day-of-the-week:first-wednesday-of-the-month  \
+    --set scheduled-day-of-the-week:fourth-friday-of-the-month  \
+    --set scheduled-day-of-the-week:fourth-monday-of-the-month  \
+    --set scheduled-day-of-the-week:fourth-saturday-of-the-month  \
+    --set scheduled-day-of-the-week:fourth-sunday-of-the-month  \
+    --set scheduled-day-of-the-week:fourth-thursday-of-the-month  \
+    --set scheduled-day-of-the-week:fourth-tuesday-of-the-month  \
+    --set scheduled-day-of-the-week:fourth-wednesday-of-the-month  \
+    --set scheduled-day-of-the-week:last-friday-of-the-month  \
+    --set scheduled-day-of-the-week:last-monday-of-the-month  \
+    --set scheduled-day-of-the-week:last-saturday-of-the-month  \
+    --set scheduled-day-of-the-week:last-sunday-of-the-month  \
+    --set scheduled-day-of-the-week:last-thursday-of-the-month  \
+    --set scheduled-day-of-the-week:last-tuesday-of-the-month  \
+    --set scheduled-day-of-the-week:last-wednesday-of-the-month  \
+    --set scheduled-day-of-the-week:second-friday-of-the-month  \
+    --set scheduled-day-of-the-week:second-monday-of-the-month  \
+    --set scheduled-day-of-the-week:second-saturday-of-the-month  \
+    --set scheduled-day-of-the-week:second-sunday-of-the-month  \
+    --set scheduled-day-of-the-week:second-thursday-of-the-month  \
+    --set scheduled-day-of-the-week:second-tuesday-of-the-month  \
+    --set scheduled-day-of-the-week:second-wednesday-of-the-month  \
+    --set scheduled-day-of-the-week:third-friday-of-the-month  \
+    --set scheduled-day-of-the-week:third-monday-of-the-month  \
+    --set scheduled-day-of-the-week:third-saturday-of-the-month  \
+    --set scheduled-day-of-the-week:third-sunday-of-the-month  \
+    --set scheduled-day-of-the-week:third-thursday-of-the-month  \
+    --set scheduled-day-of-the-week:third-tuesday-of-the-month  \
+    --set scheduled-day-of-the-week:third-wednesday-of-the-month  \
+    --set scheduled-time-of-day:00:00 
+
+dsconfig create-recurring-task \
+    --task-name test-csd  \
+    --type collect-support-data  \
+    --set output-directory:csd  \
+    --set retain-previous-support-data-archive-count:1 
+
+dsconfig create-recurring-task-chain \
+    --chain-name test-csd  \
+    --set enabled:false  \
+    --set recurring-task:test-csd  \
+    --set scheduled-date-selection-type:every-day  \
+    --set scheduled-time-of-day:01:00 
+
+dsconfig create-root-dn-user \
+    --user-name jeffpeek@pingidentity.com  \
+    --set first-name:Jeff  \
+    --set last-name:Peek 
+
+dsconfig create-root-dn-user \
+    --user-name 'Proxy User'  \
+    --set 'alternate-bind-dn:cn=Proxy User'  \
+    --set password:{PBKDF2}ABDJElsWsAsl9u2nuKNBWVMkJxDUmNEGAG9DeQWxpF+mzWNKX497GHduh9CWXGBVckvmzw==  \
+    --set first-name:Proxy  \
+    --set last-name:User  \
+    --set inherit-default-root-privileges:false  \
+    --set privilege:bypass-acl  \
+    --set privilege:config-read  \
+    --set privilege:lockdown-mode  \
+    --set privilege:permit-forwarding-client-connection-policy  \
+    --set privilege:permit-get-password-policy-state-issues  \
+    --set privilege:permit-proxied-mschapv2-details  \
+    --set privilege:proxied-auth  \
+    --set privilege:stream-values 
+
+dsconfig set-root-dn-user-prop \
+    --user-name 'SCIM2 Servlet'  \
+    --add privilege:unindexed-search 
+
+dsconfig create-sasl-mechanism-handler \
+    --handler-name PING-IDENTITY-INTER-SERVER  \
+    --set enabled:true 
+
+dsconfig create-sensitive-attribute \
+    --attribute-name 'Employee Telephone Number'  \
+    --set attribute-type:telephonenumber 
+
+dsconfig set-sensitive-attribute-prop \
+    --attribute-name 'Sensitive Password Attributes'  \
+    --add attribute-type:pwdhistory  \
+    --reset include-default-sensitive-operational-attributes 
+
+dsconfig set-sensitive-attribute-prop \
+    --attribute-name 'TOTP Shared Secret'  \
+    --reset include-default-sensitive-operational-attributes 
+
+dsconfig set-virtual-attribute-prop \
+    --name 'Delegated Admin Privilege'  \
+    --set enabled:true 
+
+dsconfig create-virtual-attribute \
+    --name 'emailAddress Virtual Attribute'  \
+    --type mirror  \
+    --set enabled:true  \
+    --set attribute-type:emailaddress  \
+    --set base-dn:ou=people,dc=example,dc=com  \
+    --set source-attribute:mail 
+
+dsconfig create-virtual-attribute \
+    --name managerName  \
+    --type mirror  \
+    --set 'description:managerName from manager cn'  \
+    --set enabled:true  \
+    --set attribute-type:managername  \
+    --set source-attribute:cn  \
+    --set source-entry-dn-attribute:manager 
+
+dsconfig set-virtual-attribute-prop \
+    --name 'Password Policy State JSON'  \
+    --set enabled:true 
+
+dsconfig create-virtual-attribute \
+    --name 'Training PW Policy VA'  \
+    --type user-defined  \
+    --set 'description:Training PW Policy VA'  \
+    --set enabled:true  \
+    --set attribute-type:ds-pwp-password-policy-dn  \
+    --set 'group-dn:cn=Training Password Policy,ou=groups,dc=example,dc=com'  \
+    --set 'value:cn=Training Password Policy,cn=Password Policies,cn=config' 
+
+dsconfig set-web-application-extension-prop \
+    --extension-name Console  \
+    --set oidc-client-id:c6af6768-8c12-48ee-8756-24ca7149a699  \
+    --set oidc-client-secret:AABctLlv3q9erkmpSHfea9e/0a8KfZqLXm+BNpj/RqSvxd9tay1T4aTIkeYpwXH5lK+O9AStBL6ph6Pa1tsEZzQqcbEsS+B/VHQBIaVzFiruaw==  \
+    --set oidc-issuer-url:https://auth.pingone.com/ec445876-d60f-4be7-a980-fbce418e1e2a/as 
+
+dsconfig create-web-application-extension \
+    --extension-name Delegator  \
+    --set base-context-path:/delegator  \
+    --set document-root-directory:webapps/delegator/app 
+
+dsconfig set-connection-handler-prop \
+    --handler-name 'HTTPS Connection Handler'  \
+    --add 'http-servlet-extension:Delegated Admin'  \
+    --add web-application-extension:Delegator 
+
+dsconfig create-account-status-notification-handler \
+    --handler-name 'Delegated Admin Email Account Status Notification Handler'  \
+    --type multi-part-email  \
+    --set enabled:false  \
+    --set 'account-creation-notification-request-criteria:Delegated Admin User Creation Request Criteria'  \
+    --set account-created-message-template:config/account-status-notification-email-templates/delegated-admin-account-created.template 
+
+dsconfig create-identity-mapper \
+    --mapper-name entryUUIDMatch  \
+    --type exact-match  \
+    --set enabled:true  \
+    --set match-attribute:entryUUID  \
+    --set match-base-dn:dc=example,dc=com 
+
+dsconfig create-access-token-validator \
+    --validator-name PingFederateValidator  \
+    --type ping-federate  \
+    --set identity-mapper:entryUUIDMatch  \
+    --set enabled:true  \
+    --set authorization-server:PingFederateInstance  \
+    --set 'client-id:PingDirectory Server'  \
+    --set client-secret:AABL1eLw7eFjw8D1PIutwBLNaxxFcZydB7s= 
+
+dsconfig create-identity-mapper \
+    --mapper-name 'Root DN Users'  \
+    --type exact-match  \
+    --set enabled:true  \
+    --set match-attribute:cn  \
+    --set 'match-base-dn:cn=Root DNs,cn=config' 
+
+dsconfig create-identity-mapper \
+    --mapper-name 'Topology Admin Users'  \
+    --type exact-match  \
+    --set enabled:true  \
+    --set match-attribute:cn  \
+    --set 'match-base-dn:cn=Topology Admin Users,cn=topology,cn=config' 
+
+dsconfig create-identity-mapper \
+    --mapper-name 'All Admin Users'  \
+    --type aggregate  \
+    --set enabled:true  \
+    --set 'any-included-identity-mapper:Root DN Users'  \
+    --set 'any-included-identity-mapper:Topology Admin Users' 
+
+dsconfig create-id-token-validator \
+    --validator-name 'PingOne ID Token Validator'  \
+    --type ping-one  \
+    --set enabled:true  \
+    --set 'identity-mapper:All Admin Users'  \
+    --set issuer-url:https://auth.pingone.com/ec445876-d60f-4be7-a980-fbce418e1e2a/as  \
+    --set evaluation-order-index:1 
+
+dsconfig create-sasl-mechanism-handler \
+    --handler-name OAUTHBEARER  \
+    --type oauth-bearer  \
+    --set enabled:true  \
+    --set 'id-token-validator:PingOne ID Token Validator' 
+
+dsconfig create-plugin \
+    --plugin-name 'Clean Up Uniqueness Control Conflict Prevention Details Entries'  \
+    --type purge-expired-data  \
+    --set 'description:This plugin can clean up any temporary conflict prevention details entries that were created while processing add, modify, and modify DN requests that include a uniqueness request control with the "create conflict prevention details entry" flag set to true.  The server should automatically remove these conflict prevention details entries when the requested operation has completed, but this plugin can help ensure that any lingering entries are removed if they are still around five minutes after they have been created.'  \
+    --set enabled:true  \
+    --set datetime-attribute:createTimestamp  \
+    --set 'expiration-offset:5 m'  \
+    --set purge-behavior:delete-entries  \
+    --set filter:(&(objectClass=ldapSubEntry)(objectClass=ds-uniqueness-control-conflict-prevention-details)) 
+
+dsconfig create-plugin \
+    --plugin-name 'Composed CN'  \
+    --type composed-attribute  \
+    --set enabled:true  \
+    --set attribute-type:cn  \
+    --set 'value-pattern:{givenName} {sn}' 
+
+dsconfig create-plugin \
+    --plugin-name 'JSON Stats Logger'  \
+    --type periodic-stats-logger  \
+    --set 'description:Logs performance stats to a JSON log file periodically.'  \
+    --set enabled:false  \
+    --set local-db-backend-info:basic  \
+    --set replication-info:basic  \
+    --set 'log-interval:1 s'  \
+    --set 'collection-interval:200 ms'  \
+    --set suppress-if-idle:true  \
+    --set included-ldap-stat:active-operations  \
+    --set included-ldap-stat:num-connections  \
+    --set included-ldap-stat:op-count-and-latency  \
+    --set included-ldap-stat:work-queue  \
+    --set included-resource-stat:memory-utilization  \
+    --set histogram-op-type:all  \
+    --set log-file-format:json  \
+    --set log-file:logs/dsstats.json  \
+    --set 'rotation-policy:Fixed Time Rotation Policy'  \
+    --set 'rotation-policy:Size Limit Rotation Policy'  \
+    --set 'retention-policy:File Count Retention Policy' 
+
+dsconfig create-plugin \
+    --plugin-name 'Modifiable Password Policy State Plugin'  \
+    --type modifiable-password-policy-state  \
+    --set enabled:true  \
+    --set base-dn:dc=example,dc=com  \
+    --set filter:(|(objectClass=person)(objectClass=ds-cfg-user)) 
+
+dsconfig set-plugin-prop \
+    --plugin-name 'Referential Integrity'  \
+    --set enabled:true 
+
+dsconfig set-plugin-prop \
+    --plugin-name 'Stats Logger'  \
+    --set enabled:true  \
+    --set local-db-backend-info:extended  \
+    --set header-prefix-per-column:true  \
+    --set empty-instead-of-zero:false  \
+    --set lines-between-header:0  \
+    --set log-file-format:json  \
+    --set log-file:logs/dsstats.json 
+
+
